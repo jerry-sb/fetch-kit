@@ -30,7 +30,7 @@
     "release": "changeset publish",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "typecheck": "pnpm -r run typecheck"
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [
     "fetch",
