@@ -29,7 +29,8 @@
     "coverage": "vitest run --coverage",
     "release": "changeset publish",
     "changeset": "changeset",
-    "version-packages": "changeset version"
+    "version-packages": "changeset version",
+    "typecheck": "pnpm -r run typecheck"
   },
   "keywords": [
     "fetch",
