@@ -31,8 +31,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'pnpm'
-          registry-url: 'https://registry.npmjs.org'
+          cache: "pnpm"
+          registry-url: "https://registry.npmjs.org"
 
       # pnpm-lock.yaml 기준으로 의존성 설치.
       # --frozen-lockfile → lockfile과 package.json 불일치 시 실패 (CI 재현성 보장).
@@ -44,7 +44,7 @@ jobs:
           pnpm -r run typecheck
 
       - name: Test (CI)
-        run: pnpm run test:ci
+        run: pnpm run test
 
       # ✅ npm 인증이 실제로 되는지 즉석 확인
       - name: npm whoami (check auth)
