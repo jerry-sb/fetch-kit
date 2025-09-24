@@ -1,5 +1,5 @@
 ---
-"fetch-kit": minor
+"@jerryshim/fetch-kit": minor
 ---
 
 ## 한국어
