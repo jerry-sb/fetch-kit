@@ -1,0 +1,69 @@
+name: Release
+on:
+  push:
+    branches: [main]
+
+jobs:
+  release:
+    # GitHub Actions에서 토큰(GITHUB_TOKEN)이 갖는 권한을 지정.
+    # contents: write → 리포지토리 내용 쓰기 가능 (릴리즈 태그 생성, 버전 파일 커밋 등).
+    # pull-requests: write → 자동 PR 생성 가능 (changesets가 release PR 만듦).
+    # id-token: write → OIDC(OpenID Connect) 인증에 필요 (주로 npm, cloud 배포 시).
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
+
+    # GitHub에서 제공하는 Ubuntu 최신 이미지 위에서 실행됨.
+    runs-on: ubuntu-latest
+
+    # 리포지토리 코드를 runner에 체크아웃.
+    # runner에 pnpm v10 설치. 이거 안 하면 기본적으로 npm만 있음.
+    # Node.js v22 설치. cache: 'pnpm' → pnpm lockfile 기반으로 캐시 활용 → CI 속도 향상.
+    # registry-url → npm publish 할 레지스트리 주소 설정 (기본 npm 공식).
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+          registry-url: 'https://registry.npmjs.org'
+
+      # pnpm-lock.yaml 기준으로 의존성 설치.
+      # --frozen-lockfile → lockfile과 package.json 불일치 시 실패 (CI 재현성 보장).
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build (typecheck & test optional)
+        run: |
+          pnpm -r --if-present run build
+          pnpm -r run typecheck
+
+      - name: Test (CI)
+        run: pnpm run test:ci
+
+      # ✅ npm 인증이 실제로 되는지 즉석 확인
+      - name: npm whoami (check auth)
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm whoami
+
+      # changesets/action GitHub Action 실행.
+      # changeset 파일이 있으면 release PR 생성.
+      - name: Create Release Pull Request or Publish
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          version: pnpm changeset version
+          publish: pnpm changeset publish
+        env:
+          # ✅ 내장 토큰 사용(별도 GH_TOKEN 필요 X)
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # ✅ npm이 읽는 표준 이름
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # (겹쳐도 무해) 일부 툴 호환
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

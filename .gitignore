@@ -1,0 +1,19 @@
+# node_modules (모든 경로에서)
+**/node_modules/
+**/dist/
+
+# 빌드 결과물
+/dist/
+/build/
+/coverage/
+/logs/
+/temp/
+
+# IDE 설정
+.idea/
+.vscode/
+
+# 기타
+*.log
+.DS_Store
+.cursor/
