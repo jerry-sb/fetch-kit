@@ -25,14 +25,35 @@ export async function parseByMode<M extends BodyParse, J = unknown>(
 
 export function toSearchParams(params?: Params): string {
   if (!params) return "";
-  const usp =
-    params instanceof URLSearchParams
-      ? params
-      : Array.isArray(params)
-        ? new URLSearchParams(params)
-        : typeof params === "string"
-          ? new URLSearchParams(params)
-          : new URLSearchParams(Object.entries(params));
+
+  let usp: URLSearchParams;
+
+  // 1. URLSearchParams 인스턴스인 경우
+  if (params instanceof URLSearchParams) {
+    usp = params;
+  }
+  // 2. 배열([key, value][]) 형태인 경우 [["a", "1"], ["b", "2"]]
+  else if (Array.isArray(params)) {
+    usp = new URLSearchParams(params);
+  }
+  // 3. 문자열 형태인 경우 (예: "?a=1&b=2")
+  else if (typeof params === "string") {
+    usp = new URLSearchParams(params);
+  }
+  // 4. 일반 객체 형태인 경우 (예: { a: 1, b: "x" })
+  else if (typeof params === "object") {
+    // value가 number이면 string으로 변환
+    const entries = Object.entries(params).map(([key, value]) => [
+      key,
+      typeof value === "number" ? String(value) : value,
+    ]);
+    usp = new URLSearchParams(entries as [string, string][]);
+  }
+  // 5. 기타 예외 케이스
+  else {
+    return "";
+  }
+
   const qs = usp.toString();
   return qs ? `?${qs}` : "";
 }
