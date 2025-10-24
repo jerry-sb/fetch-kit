@@ -6,7 +6,7 @@ import {
 
 export type Params =
   | string[][]
-  | Record<string, string | number>
+  | Record<string, string[] | number[] | string | number | undefined | null>
   | string
   | URLSearchParams;
 

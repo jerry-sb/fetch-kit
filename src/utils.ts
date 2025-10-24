@@ -39,18 +39,17 @@ export function toSearchParams(params?: Params): string {
   // 3. 문자열 형태인 경우 (예: "?a=1&b=2")
   else if (typeof params === "string") {
     usp = new URLSearchParams(params);
-  }
-  // 4. 일반 객체 형태인 경우 (예: { a: 1, b: "x" })
-  else if (typeof params === "object") {
-    // value가 number이면 string으로 변환
-    const entries = Object.entries(params).map(([key, value]) => [
-      key,
-      typeof value === "number" ? String(value) : value,
-    ]);
-    usp = new URLSearchParams(entries as [string, string][]);
-  }
-  // 5. 기타 예외 케이스
-  else {
+  } else if (typeof params === "object") {
+    usp = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value === undefined || value === null) return;
+      if (Array.isArray(value)) {
+        value.forEach((v) => usp.append(key, String(v)));
+      } else {
+        usp.set(key, String(value));
+      }
+    });
+  } else {
     return "";
   }
 
