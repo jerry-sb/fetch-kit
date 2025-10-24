@@ -51,6 +51,36 @@ const user = await http.get<SR<User>, User>("/users/42", undefined, {
   - `put(path, body?, init?)`
   - `del(path, params?, init?)`
 
+#### Params (querystring)
+
+`get`/`del` accept `params` to build the querystring. Supported forms:
+
+- `URLSearchParams`
+- `Array<[string, string]>`
+- `string` (e.g., `"a=1&b=2"` or `"?a=1&b=2"`)
+- `Record<string, string | number>` — values are stringified; `null`/`undefined` are skipped; `string[]`/`number[]` repeat keys.
+
+Examples:
+
+```ts
+http.get("/items", new URLSearchParams({ a: "1", b: "x" }), { parse: "json" });
+http.get(
+  "/items",
+  [
+    ["a", "1"],
+    ["b", "2"],
+  ],
+  { parse: "json" }
+);
+http.get("/items", "page=2&sort=asc", { parse: "text" });
+http.get(
+  "/items",
+  { page: 1, tags: ["a", "b"], q: "x", none: undefined },
+  { parse: "json" }
+);
+// → /items?page=1&tags=a&tags=b&q=x
+```
+
 #### Options
 
 - `baseUrl?: string`
