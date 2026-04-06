@@ -19,6 +19,10 @@ export abstract class BaseHttpError<P = unknown> extends Error {
     this.cause = init.cause;
   }
 
+  toString() {
+    return JSON.stringify(this.toJSON());
+  }
+
   toJSON() {
     return {
       name: this.name,

@@ -16,4 +16,4 @@
 # 기타
 *.log
 .DS_Store
-.cursor/
+.cursor/.npmrc

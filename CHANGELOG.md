@@ -1,5 +1,11 @@
 # @jerryshim/fetch-kit
 
+## 1.3.1
+
+### Patch Changes
+
+- toSearchParams에서 URLSearchParams의 공백 인코딩을 '+'에서 '%20'으로 변환 (RFC 3986 준수)
+
 ## 1.3.0
 
 ### Minor Changes

@@ -53,7 +53,9 @@ export function toSearchParams(params?: Params): string {
     return "";
   }
 
-  const qs = usp.toString();
+  // URLSearchParams.toString()는 공백을 '+'로 인코딩(W3C form 규격)하지만,
+  // REST API에서는 RFC 3986의 '%20'이 표준이므로 변환한다.
+  const qs = usp.toString().replaceAll("+", "%20");
   return qs ? `?${qs}` : "";
 }
 
