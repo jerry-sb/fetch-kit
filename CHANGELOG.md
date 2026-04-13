@@ -1,5 +1,11 @@
 # @jerryshim/fetch-kit
 
+## 1.3.2
+
+### Patch Changes
+
+- 에러 메시지 추출 개선: detail/title 필드 지원 + HTTP/2 빈 statusText fallback
+
 ## 1.3.1
 
 ### Patch Changes

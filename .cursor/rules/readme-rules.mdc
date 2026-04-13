@@ -1,0 +1,73 @@
+---
+alwaysApply: false
+---
+
+### Purpose and scope
+
+- • **Audience**: Target users (app devs) and contributors; assume TS/ESM by default.
+- • **Source of truth**: Derive docs from code exports, `package.json` exports, and `CHANGELOG.md`. Do not invent APIs.
+
+### Structure
+
+- • **Title and tagline**: Package name and one‑line purpose.
+- • **Installation**: `pnpm`, `npm`, `yarn` commands.
+- • **Quick Start**: Minimal, copy‑pastable example that actually runs.
+- • **API**: Every export listed and described (classes, functions, types).
+- • **Options**: Full schema with defaults and behavior.
+- • **Usage**: Common patterns; advanced/edge scenarios if applicable.
+- • **Integration**: Cross‑package hooks (e.g., instance registry, globals).
+- • **Styling/UX**: Any required classes/attributes and visual states.
+- • **Accessibility**: Roles, ARIA, keyboard interactions (if UI related).
+- • **TypeScript**: Types, generics, augmentation examples.
+- • **Lifecycle**: Init/destroy, disposers, resource cleanup.
+- • **Versioning**: Compatibility notes, breaking changes summary.
+- • **License and notices**: SPDX, third‑party attributions.
+
+### Writing rules
+
+- • **Accuracy over breadth**: Only document shipped, tested behavior.
+- • **Parity**: `README` and `README_KR` must be semantically equivalent.
+- • **Consistency**: Same headings order, code blocks, and examples in both.
+- • **Style**: Clear, direct, active voice. Prefer examples over prose.
+- • **Formatting**:
+  - Use `##`/`###` headings, bullet lists; avoid long paragraphs.
+  - Use backticks for files, dirs, exports, attributes, and URLs when shown.
+  - Provide language‑tagged fenced code; no inline comments explaining actions.
+- • **Examples**:
+  - Must be runnable and aligned with current exports.
+  - Show both ESM import and any documented globals (e.g., `.../global`) if relevant.
+  - Include minimal and one advanced example; keep under ~30 lines each.
+- • **Defaults**: Always state default values and when they apply.
+- • **Errors/edge cases**: Note thrown errors, no‑ops (SSR), and guard behavior.
+- • **Security/perf**: Call out browser‑only side effects, timers, listeners.
+- • **Data attributes**: If supported, list exact attributes and precedence vs options.
+- • **Instance registry**: If used, show add/get/remove patterns and disposers.
+
+### Korean localization (README_KR)
+
+- • **Faithful translation**: No feature drift; technical terms kept or clarified once.
+- • **Terminology**: Use consistent Korean equivalents (e.g., “인스턴스 레지스트리”, “해제/정리(Dispose)”).
+- • **Code blocks identical**: Only comments/strings localized if safe.
+- • **Numbers/units**: Keep ms, px, etc. as in English.
+
+### Quality checklist before publish
+
+- • Examples compile and run (SSR safety where noted).
+- • All exports listed; defaults match source.
+- • Links/paths valid; no bare URLs without backticks/anchors.
+- • Changelog cross‑checked for new/removed APIs.
+- • Lint/format passes for markdown and code blocks.
+- • KR and EN files updated together and diff‑aligned.
+
+### Do/Don’t
+
+- • **Do**: Show how to clean up listeners/timers and remove instances.
+- • **Do**: Highlight SSR behavior for browser‑only helpers.
+- • **Don’t**: Document internal/private APIs or unstable behavior.
+- • **Don’t**: Duplicate content across sections; link within the doc instead.
+
+### File conventions
+
+- • **Files**: `packages/<scope>/<name>/README.md` and `README_KR.md`.
+- • **Citations**: When referencing repo files, use backticks (e.g., `src/index.ts`).
+- • **Third‑party**: Keep notices at bottom under “Third‑Party Notices”.

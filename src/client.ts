@@ -145,7 +145,8 @@ export function createHttpClient<E = unknown, Expand = unknown>(
     ctx: XRequestContext,
     decoder?: HttpClientOptions<E>["decodeError"]
   ): Promise<{ message: string; data?: E }> {
-    let message = res.statusText;
+    // HTTP/2에서는 statusText가 빈 문자열이므로 status code로 fallback
+    let message = res.statusText || `HTTP ${res.status}`;
     let data: E | undefined;
     try {
       // 1) 사용자 정의 decodeError 먼저 시도

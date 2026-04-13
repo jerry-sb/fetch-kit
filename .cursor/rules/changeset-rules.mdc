@@ -1,0 +1,152 @@
+---
+alwaysApply: false
+---
+
+### Changeset and Commit Message Rules (English; outputs will be KO+EN)
+
+Use these rules when you provide a folder context. I will detect changed packages, decide version bumps, and produce a bilingual changeset entry and an English-only commit message.
+
+## 1) Scope and impact detection
+
+- • **Map folder to package(s)**: Resolve the package(s) affected by the provided path using workspace boundaries (the closest `package.json`).
+- • **Group by package**: If multiple packages are touched, each package gets its own bump decision.
+- • **Classify change type**:
+  - **major**: Breaking changes (removed/renamed exports, prop/type signature changes, behavioral breaking defaults, event/token/variable rename or removal).
+  - **minor**: Backward-compatible features (new exports, new props with defaults, new CSS tokens, new utilities).
+  - **patch**: Bug fixes, perf, refactor with no public API change, internal types, test, CI.
+  - **no release**: Docs-only or dev-only in private packages.
+
+## 2) Changeset file authoring
+
+- • **Location**: `.changeset/<id>.md` (use the CLI to generate; otherwise any unique filename).
+- • **Frontmatter**: List each affected package with the selected bump:
+  - Syntax:
+    - `"package-name": major|minor|patch`
+- • **Body structure**: Provide bilingual release notes. Place Korean first, then English.
+  - Recommended sections:
+    - KO: Summary, Changes, Migration (if any), Notes/Refs
+    - EN: Summary, Changes, Migration (if any), Notes/Refs
+  - If breaking: include a clear “BREAKING CHANGE” line in both KO and EN.
+
+Example (multi-package):
+
+```md
+---
+'@jerry-design/flow-dom': minor
+'@jerry-design/flow-carousel': patch
+---
+
+## 한국어
+
+- **요약**: `flow-dom`에 새로운 이벤트 유틸 추가, `flow-carousel` 버그 수정.
+- **변경 사항**
+  - `flow-dom`: `createEventBus`에 `once` 핸들러 지원 추가.
+  - `flow-carousel`: 루프 모드에서 첫 슬라이드로 돌아갈 때 멈추는 이슈 수정.
+- **마이그레이션**: 없음.
+- **참고**: #123
+
+## English
+
+- **Summary**: Add new event utility in `flow-dom`, fix a bug in `flow-carousel`.
+- **Changes**
+  - `flow-dom`: Add `once` handler support to `createEventBus`.
+  - `flow-carousel`: Fix stalling when returning to first slide in loop mode.
+- **Migration**: None.
+- **Refs**: #123
+```
+
+Example (breaking):
+
+```md
+---
+'@jerry-design/flow-dom': major
+---
+
+## 한국어
+
+- **요약**: `on` 리턴 타입이 `Unsubscribe`로 변경되어 브레이킹 체인지가 발생했습니다.
+- **변경 사항**
+  - `on(event, handler)`가 `void` 대신 `Unsubscribe`를 반환합니다.
+- **마이그레이션**
+  - 기존: `on('ready', h);`
+  - 변경: `const off = on('ready', h); off();`
+- **BREAKING CHANGE**: 반환 타입 변경에 따른 사용 코드 업데이트 필요.
+- **참고**: #456
+
+## English
+
+- **Summary**: `on` now returns `Unsubscribe`, which is a breaking change.
+- **Changes**
+  - `on(event, handler)` returns `Unsubscribe` instead of `void`.
+- **Migration**
+  - Before: `on('ready', h);`
+  - After: `const off = on('ready', h); off();`
+- **BREAKING CHANGE**: Update usages to handle the new return type.
+- **Refs**: #456
+```
+
+## 3) Commit message rules (English only, Conventional Commits)
+
+- • **Type**: `feat|fix|perf|refactor|docs|test|build|ci|style|chore|revert`
+- • **Scope**: the package or area, e.g. `flow-dom`, `flow-carousel`, `builder`.
+- • **Subject (first line)**:
+  - English only, concise, imperative mood.
+
+- • **Body**:
+  - Provide details, rationale, and migration notes if breaking.
+  - Reference issues/PRs.
+
+- • **Footer**:
+  - Include `BREAKING CHANGE:` for majors (also reflected in body).
+  - Include `Refs`, `Closes`, etc.
+
+Examples:
+
+```text
+feat(flow-dom): Add once handler support to createEventBus
+
+- on(event, handler) now accepts { once: true }
+- Internal perf improvements
+Refs: #123
+```
+
+```text
+fix(flow-carousel): Fix stalling when looping back to the first slide
+
+- Ensure correct index normalization in loop mode
+Closes: #234
+```
+
+```text
+feat(flow-dom): Change return type of on to Unsubscribe
+
+- Update all usages to store and call off()
+BREAKING CHANGE: on(event, handler) no longer returns void
+Refs: #456
+```
+
+## 4) Decision checklist per package
+
+- • **Public API changed?** Exports, types, prop signatures, events, CSS tokens.
+- • **Behavioral default changed?** Even if types same → likely breaking.
+- • **New feature without breaking?** → minor.
+- • **Bug fix/maintenance only?** → patch.
+- • **Docs/infra only?** → no release (skip listing the package in frontmatter).
+
+## 5) What I will do when you give a folder context
+
+1. Identify affected package(s) under that path.
+2. Compute diffs and categorize changes (major/minor/patch/no release) per package.
+3. Draft a `.changeset/<id>.md` with KO first and EN second as shown above.
+4. Generate an English-only Conventional Commit message.
+5. If multiple packages are affected, include them all in the frontmatter with their bumps.
+6. Surface migration notes if any breaking changes are detected.
+7. Provide the final changeset content and the commit message for your review.
+
+## 6) Formatting notes
+
+- • **Changeset**: Korean first, English second.
+- • **Commit message**: English only.
+- • Keep subjects short; details in body/changeset.
+- • Prefer imperative mood for English subjects.
+- • Link issues as `#123` and PRs as `#123` or full URLs if cross-repo.

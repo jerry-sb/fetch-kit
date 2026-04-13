@@ -66,8 +66,11 @@ export function extractMessage(val: unknown): string | undefined {
   if (typeof val === "string") return val;
 
   if (isRecord(val)) {
-    const m = val["message"];
-    if (typeof m === "string") return m;
+    // 공통 에러 필드 우선순위: message → detail → error.message
+    for (const key of ["message", "detail", "title"] as const) {
+      const v = val[key];
+      if (typeof v === "string" && v.length > 0) return v;
+    }
 
     const err = val["error"];
     if (isRecord(err) && typeof err["message"] === "string") {

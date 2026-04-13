@@ -1,0 +1,154 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+
+---
+
+description:
+globs:
+alwaysApply: false
+
+---
+
+# Cursor Rules: Vitest React Component Unit Tests
+
+**Scope**: React (incl. Next.js client components), Vitest, React Testing Library (RTL)
+
+## Golden Rules
+
+1. **Test behavior, not implementation details.** Assert on what a user can observe (text, role, ARIA name, DOM state), not internal state, hook calls, or class names.
+2. **Prefer `userEvent` over `fireEvent`.** Use realistic interactions. Fall back to `fireEvent` only when no user-level API exists.
+3. **Accessible queries first.** Order of preference: `getByRole → getByLabelText → getByPlaceholderText → getByText → getByTestId (last resort)`. Always include the **accessible name**.
+4. **AAA structure.** Arrange (render/seed) → Act (interact/await) → Assert (expect). Keep each test ≤ \~15 lines; extract helpers when longer.
+5. **Async correctness.** Use `findBy*` for elements that appear later; `waitFor` only for **state transitions/side-effects**, never for fixed timeouts or “sleep”.
+6. **Minimal snapshots.** Avoid broad snapshots for dynamic markup. If used, snapshot **stable, focused** parts (e.g., a generated markdown fragment).
+7. **Determinism.** Control non-determinism (time, randomness, network). Use `vi.setSystemTime`, `vi.spyOn(Math, 'random').mockReturnValue(0.42)`, MSW for network.
+8. **Mock at the boundary only.** Mock network, date/time, `next/navigation`/`next/router`, and heavy IO. **Do not mock React hooks or the component under test.**
+9. **No CSS assertions.** Don’t assert Tailwind class strings. Assert computed behavior (visibility, disabled, styles via `toHaveStyle` only when essential).
+10. **Strict Mode ready.** Components should be idempotent under React StrictMode. Don’t suppress double-invocation issues with mocks—fix effects.
+11. **Prop change tests.** Use `rerender` to verify updates when props change; avoid unmount/remount unless lifecycle is the feature.
+12. **a11y checks (lightweight).** Prefer role/name assertions. Optionally run `axe` in a few critical tests; don’t make all tests depend on it.
+13. **Keep tests focused.** One user scenario per test. Cross-component flows belong in integration tests—not unit tests.
+14. **Data fetching.** Use MSW to stub requests. Never hit real endpoints. Encode error/empty/loading cases with separate handlers.
+15. **Timers & transitions.** Use `vi.useFakeTimers()` when timers matter; advance timers explicitly. For React transitions, assert on final UI, not intermediate task scheduling.
+16. **File naming & colocate.** `ComponentName.test.tsx` next to the component. Short, intention-revealing test names.
+17. **Coverage as a guardrail.** Aim for: lines 90, branches 80, functions 90, statements 90. Fail CI on significant drops, not tiny fluctuations.
+18. **Performance & flake.** No `setTimeout` “stabilizers”. No arbitrary `await new Promise`. If it flakes, find/remove the race, don’t paper over it.
+19. **Next.js specifics.** Only test **client** components with RTL. For server components, extract pure logic into functions and unit-test them with plain Vitest.
+20. **Linters.** Use `eslint-plugin-jest-dom` and `eslint-plugin-testing-library`. Fail CI on anti-patterns (non-RTL queries, unused waits, etc.).
+
+## Default Setup (add to `vitest.config.ts`)
+
+```ts
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./test/setup.ts'],
+    globals: true,
+    css: true,
+    coverage: {
+      enabled: true,
+      reporter: ['text', 'lcov'],
+      lines: 90,
+      functions: 90,
+      statements: 90,
+      branches: 80,
+    },
+  },
+});
+```
+
+## Test Setup (`test/setup.ts`)
+
+```ts
+import '@testing-library/jest-dom/vitest';
+import { afterEach, vi } from 'vitest';
+import { cleanup } from '@testing-library/react';
+
+// Deterministic time by default; override per-test if needed.
+vi.setSystemTime(new Date('2024-01-01T00:00:00Z'));
+afterEach(() => {
+  cleanup();
+  vi.clearAllMocks();
+  vi.useRealTimers();
+});
+```
+
+## Example Test Template
+
+```tsx
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { vi } from 'vitest';
+import { MyButton } from './MyButton';
+
+describe('<MyButton />', () => {
+  it('disables while submitting and restores on resolve', async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn().mockResolvedValueOnce(undefined);
+
+    render(<MyButton onSubmit={onSubmit} />);
+
+    // Arrange: button is enabled and visible to users by role/name
+    const btn = screen.getByRole('button', { name: /save/i });
+    expect(btn).toBeEnabled();
+
+    // Act: click triggers async submit
+    await user.click(btn);
+
+    // Assert: disabled during submit, then re-enabled
+    expect(btn).toBeDisabled();
+    await screen.findByRole('button', { name: /save/i }); // re-render settled
+    expect(btn).toBeEnabled();
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows error message on failure (a11y-visible)', async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn().mockRejectedValueOnce(new Error('Network'));
+
+    render(<MyButton onSubmit={onSubmit} />);
+
+    await user.click(screen.getByRole('button', { name: /save/i }));
+
+    // Prefer role-based queries; alerts are great for error states
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(/try again/i);
+  });
+});
+```
+
+## MSW Sketch (optional)
+
+```ts
+// test/msw.ts
+import { setupServer } from 'msw/node';
+import { http, HttpResponse } from 'msw';
+
+export const server = setupServer(
+  http.get('/api/items', () => HttpResponse.json([{ id: 1, name: 'A' }])),
+);
+```
+
+```ts
+// test/setup.ts (append)
+import { server } from './msw';
+import { beforeAll, afterAll, afterEach } from 'vitest';
+
+beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
+```
+
+## Anti-Patterns (reject in reviews)
+
+- Asserting internal state, hook invocations, or CSS class strings.
+- Arbitrary `await waitFor(() => {})` with no concrete condition.
+- Full-file snapshots of interactive components.
+- Hitting real network or relying on global timeouts.
+- Using `getBy*` for async elements (use `findBy*`).
+- Over-mocking (mocking React, hooks, or the component under test).

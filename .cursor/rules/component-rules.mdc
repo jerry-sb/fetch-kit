@@ -1,0 +1,142 @@
+---
+alwaysApply: false
+---
+
+### Goals & Principles
+
+- **Reusability first:** lightly wrap Radix/Primitives into composable compound components.
+- **Consistent API:** share common props like `variant`, `color`, `size`, `radius`, `loading`, `asChild`.
+- **Token-first styling:** rely on Tailwind + theme-builder tokens with `cva` and `cn`.
+- **Built-in a11y:** roles, names, and UI state must be user-observable.
+
+### Package and File Layout
+
+- `packages/ui/<component>/`
+  - `src/<Component>.tsx`: main component
+  - `src/index.ts`: barrel exports
+  - `src/<Component>.test.tsx`: colocated unit tests (RTL)
+  - `jerry-theme.config.js`: theme config per component
+  - Local config files: `tsconfig.json`, `eslint.config.mjs`
+  - `dist/`: build output
+
+### Naming
+
+- Root component: PascalCase (`Button`, `NavigationMenu`).
+- Subcomponents: Prefix + PascalCase (`NavigationMenuTrigger`).
+- Reusable style utilities: top-level functions (`navigationMenuTriggerStyle`).
+
+### Component Design
+
+- Always use `React.forwardRef` and set `displayName`.
+- Support `asChild` (via `Slot`) for semantic/layout swaps.
+- Disabled/loading:
+  - Native buttons: use `disabled`.
+  - `asChild`: use `aria-disabled`.
+  - Prevent interactions using `composeEventHandlers`.
+- Expose visual state with `data-*` attributes (e.g., `data-variant`, `data-size`) instead of asserting class names.
+
+### State & Loading (Skeleton) Patterns
+
+> Build atomic, non-invasive state flags that never break the original semantics of a component.
+
+**State props (suggested):**
+
+- `loading?: boolean` — renders a built-in Skeleton UI and locks interactions.
+- `busy?: boolean` — sets `aria-busy` without swapping UI.
+- `active?: boolean`, `selected?: boolean`, `pressed?: boolean`, `invalid?: boolean`, `success?: boolean`, `error?: boolean` — visual/ARIA hints only; do not change role/structure.
+- `skeletonClassName?: string` — class override for the default skeleton surface.
+- `skeletonProps?: React.HTMLAttributes<HTMLDivElement>` — fine-grained control (e.g., `aria-hidden`, test ids).
+- `loadingIcon?: React.ReactNode` — optional spinner/icon for compact controls.
+
+**Rules:**
+
+1. **Preserve layout & size:** when `loading`, keep the same outer element and sizing.  
+   Width/height from consumer classes must still apply.
+2. **Overlay pattern:** implement skeleton as an overlay that fills its container  
+   (wrapper `relative isolate`, skeleton `absolute inset-0 h-full w-full rounded-inherit`).
+3. **Accessibility:** set `aria-busy="true"`. For interactive controls, block interactions via `composeEventHandlers`.  
+   Use `disabled` (native) or `aria-disabled` (when `asChild`).
+4. **Tokens only:** default skeleton uses theme tokens (e.g., `bg-theme-monoA-6`) and `animate-pulse` or shimmer utility.
+5. **Animation utilities:** prefer preset `animate-in/out` + `fade-in-0` + `zoom-in-95`. Avoid conflicting `transition` on the same props.
+6. **Non-invasive:** state flags must not alter roles/DOM shape; they only map to `data-*` + ARIA + visuals.
+7. **Overrides:** allow `loadingIcon` for tiny controls; use overlay skeleton for larger surfaces.
+
+**Skeleton overlay snippet:**
+
+```tsx
+<div className={cn('relative isolate', className)} data-loading={loading || undefined}>
+  <div className={cn(loading && 'opacity-0 pointer-events-none')}>{children}</div>
+  {loading && (
+    <div
+      aria-hidden="true"
+      {...skeletonProps}
+      className={cn(
+        'absolute inset-0 h-full w-full rounded-inherit bg-theme-monoA-6 animate-pulse',
+        skeletonClassName,
+      )}
+    />
+  )}
+</div>
+```
+
+### Compound/Composition Pattern
+
+- Wrap each Radix primitive one-to-one, primarily to merge `className`.
+- Export all subcomponents (`Root/List/Item/Trigger/Content/Viewport/Indicator`).
+- Provide style helpers (e.g., `navigationMenuTriggerStyle`) for reuse across subcomponents.
+- Prefer composition over coupling; parent orchestrates layout only.
+
+### Styling (Tailwind + cva)
+
+- Model variants with `cva`: `variant`, `color`, `size`, `radius`, `loading`, etc.
+- Use theme tokens only: `bg-theme-<palette>-<step>`, no raw hex.
+- Merge consumer classes with `cn`, and always last.
+- Provide safe `defaultVariants`.
+- Global icon sizing within container using `_svg` selectors.
+
+### Accessibility
+
+- Guarantee role/name for interactive elements; visible to users by role.
+- Reflect state in ARIA (`aria-expanded`, `aria-disabled`) and visually.
+- Decorative/animated containers may be `aria-hidden`; tests can query with `{ hidden: true }`.
+- Maintain keyboard focus styles with `focus-visible` rings.
+
+### Events and State
+
+- Combine handlers with `composeEventHandlers` to preserve external handlers.
+- Guard early for `disabled`/`loading` and stop propagation/default.
+- Avoid duplicating derived state; prefer Radix/DOM-driven state.
+
+### API and Exports
+
+- Barrel export from `src/index.ts`: root, subcomponents, utilities.
+- Export public prop types; keep internal types private.
+- Expose pure style utilities explicitly for stories/external composition.
+
+### Testing (Vitest + RTL)
+
+- Behavior-focused assertions (role/text/ARIA/DOM state), not class strings.
+- Prefer `userEvent` interactions; use `findBy*` for async elements.
+- Use a11y-first queries in order: `getByRole → getByLabelText → getByText → getByTestId`.
+- Global cleanup between tests; handle `aria-hidden` with `{ hidden: true }`.
+- Colocate tests: `<Component>.test.tsx` next to the component.
+
+### Storybook
+
+- Provide decorators/wrappers so absolute positioning/animations are visible.
+- Demonstrate key scenarios: `asChild`, `variant/color/size`, icons, loading/disabled.
+- Showcase tokens with clear contrast and theme surfaces.
+- For overlays: `parameters.layout = 'fullscreen'`, wrapper with `min-h-screen w-screen overflow-visible`.
+
+### Theming and Tokens
+
+- Define required tokens in `jerry-theme.config.js`; keep in sync via the theme builder.
+- Enforce token naming consistency: `theme-<palette>-<step>`.
+- Maintain backward compatibility via `defaultVariants`/compoundVariants\`.
+
+### Performance & Maintainability
+
+- Keep wrappers thin; pass through Radix props.
+- Avoid unnecessary local state and deep prop drilling.
+- Optimize for readability: structured, multi-line class blocks; avoid long one-liners.
+- Keep utilities pure and decoupled.
